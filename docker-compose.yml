@@ -1,0 +1,43 @@
+# Ambiente local do team-devs (AI Software Factory).
+# Um serviço só: SQLite dispensa servidor de banco.
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      # Mesmos valores do `user:` abaixo: a imagem cria um usuário com esse uid
+      # pra que o ssh (e portanto o git push) funcione.
+      args:
+        APP_UID: ${APP_UID:-1000}
+        APP_GID: ${APP_GID:-1000}
+    container_name: teamdevs_api
+    # Roda com o uid/gid do host pra que vendor/, .env e os arquivos gravados
+    # nos projetos não fiquem como root no disco.
+    # (APP_UID/APP_GID e não UID/GID: UID é readonly no bash e não dá pra exportar.)
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
+    environment:
+      DB_CONNECTION: sqlite
+      # Fica em storage/ (e não em database/, que é ignorado pelo git como *.sqlite*)
+      # porque a tabela `projects` é dado durável, não cache descartável.
+      DB_DATABASE: /var/www/html/storage/app/team-devs.sqlite
+      # Sessão e cache em arquivo pra que o .sqlite guarde só domínio.
+      SESSION_DRIVER: file
+      CACHE_STORE: file
+      QUEUE_CONNECTION: sync
+      APP_URL: http://localhost:${API_PORT:-8000}
+      MCP_API_TOKEN: ${MCP_API_TOKEN:-local-dev-token}
+      ADMIN_NAME: ${ADMIN_NAME:-Admin}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@teamdevs.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-password}
+      HOME: /home/app
+    ports:
+      # Só em 127.0.0.1: este painel escreve arquivos na sua máquina e roda git,
+      # então não pode ficar exposto na rede.
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    volumes:
+      - ./api:/var/www/html
+      # Mesmo caminho absoluto dentro e fora: um path gravado no banco
+      # (/home/dev/projetos/promo-obra) resolve igual dos dois lados.
+      - ${PROJECTS_DIR:-/home/dev/projetos}:${PROJECTS_DIR:-/home/dev/projetos}
+      # Pro painel conseguir commitar/push nos repos dos projetos.
+      - ${HOME}/.ssh:/home/app/.ssh:ro

@@ -1,0 +1,12 @@
+[
+    {
+        "name": "PromoObra",
+        "slug": "promo-obra",
+        "description": "teste do registro durável",
+        "stack": "laravel + flutter",
+        "path": "/home/dev/projetos/promo-obra",
+        "repo_url": "git@github.com:ronefalcao/promo-obra.git",
+        "branch": "main",
+        "docs_path": "docs"
+    }
+]
